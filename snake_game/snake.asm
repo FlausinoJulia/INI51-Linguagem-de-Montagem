@@ -45,6 +45,8 @@
     maca_y dw 5        ; Para guardar a coordenada Y da maçã
     pegouMaca dw 0     ; Para auxiliar o crescimento da snake
 
+
+    ultimo_timestamp db 0
     houveColisao dw 0  ; Auxilia no tratamento de colisões (0 - falso; 1 - verdadeiro)
     tecla db 'd'       ; W - cima; S - baixo; A - esquerda; D - direita
 
@@ -205,7 +207,15 @@ inicio:
     executa_jogo proc ; Loop do jogo
 
         game_loop:
-            call delay              ; Espera um tempo (ajusta velocidade da snake)
+            ; loop para atualizar o frame a cada time delta
+            atualizar_frame:
+                mov  ah, 2ch                               ; função para obter o timestamp
+                int  21h                                   ; executa a função
+
+                cmp  dl, ultimo_timestamp                  ; compara o timestamp atual (dl) com o último timestamp
+                je   atualizar_frame                       ; se for igual, repete o loop
+
+            mov  ultimo_timestamp, dl                  ; se não, atualiza o último timestamp
             call verifica_teclado   ; Vê se o usuário pressionou alguma tecla
             call move_snake         ; Move a snake (mesmo se nenhuma tecla foi pressionada)
             jmp  game_loop          ; Mantém o loop do jogo
@@ -461,6 +471,7 @@ inicio:
             call verifica_pegou_maca
             cmp pegouMaca, 1
             je pegou_maca_x
+            
             ; Se não pegou maça e não colidiu redesenha snake (pinta nova casa de verde e pinta a última casa de preto)
             call pinta_ultima_casa_de_preto
             call atualiza_coordenadas
