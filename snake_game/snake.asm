@@ -360,15 +360,15 @@ inicio:
         atualizando_coordenadas:     ; O que está na posicao atual recebe o que está na posicao seguinte
             ; Atualizando coordenada X
             dec si
-            mov dx, snake_x_pos[si]
+            mov ax, snake_x_pos[si]
             inc si
-            mov snake_x_pos[si], dx
+            mov snake_x_pos[si], ax
 
             ; Atualizando coordenada y
             dec si
-            mov dx, snake_y_pos[si]
+            mov ax, snake_y_pos[si]
             inc si
-            mov snake_y_pos[si], dx
+            mov snake_y_pos[si], ax
 
             ;dec cx
         loop atualizando_coordenadas ; O indice 0 não tem seus valores alterados
@@ -423,7 +423,7 @@ inicio:
     verifica_pegou_maca endp
 
     move_snake proc 
-        push dx
+        push ax
 
         ; Verificando para qual direção a snake deve se mover
         cmp tecla, 'd'   ; Se a tecla é D, a snake está se movendo para DIREITA
@@ -436,7 +436,10 @@ inicio:
         je move_cima
 
         cmp tecla, 's'   ; Se a tecla é S, a snake está se movendo para BAIXO
-        je move_baixo
+        je move_baixo_1
+
+        move_baixo_1:
+            jmp move_baixo
 
         houve_colisao_1:
             call desenha_game_over
@@ -454,8 +457,8 @@ inicio:
             ; Se não pegou maça e não colidiu, a snake apenas anda (pinta nova casa de verde e pinta a última casa de preto)
             call pinta_ultima_casa_de_preto
             call atualiza_coordenadas
-            mov dx, snake_novo_x
-            mov snake_x_pos[0], dx          ; Atualiza o valor de snake_x (move para direita)[]
+            mov ax, snake_novo_x
+            mov snake_x_pos[0], ax          ; Atualiza o valor de snake_x (move para direita)[]
             call desenha_snake
 
             jmp move_snake_ret
@@ -475,8 +478,8 @@ inicio:
             ; Se não pegou maça e não colidiu redesenha snake (pinta nova casa de verde e pinta a última casa de preto)
             call pinta_ultima_casa_de_preto
             call atualiza_coordenadas
-            mov dx, snake_novo_x
-            mov snake_x_pos[0], dx          ; Atualiza o valor de snake_x (move para esquerda)
+            mov ax, snake_novo_x
+            mov snake_x_pos[0], ax          ; Atualiza o valor de snake_x (move para esquerda)
             call desenha_snake
             jmp move_snake_ret
 
@@ -492,8 +495,8 @@ inicio:
             ; Se não pegou maça e não colidiu redesenha snake (pinta nova casa de verde e pinta a última casa de preto)
             call pinta_ultima_casa_de_preto
             call atualiza_coordenadas
-            mov dx, snake_novo_y
-            mov snake_y_pos[0], dx          ; Atualiza o valor de snake_y (move para cima)
+            mov ax, snake_novo_y
+            mov snake_y_pos[0], ax          ; Atualiza o valor de snake_y (move para cima)
             call desenha_snake
             jmp move_snake_ret
 
@@ -508,43 +511,43 @@ inicio:
             ; Se não pegou maça e não colidiu redesenha snake (pinta nova casa de verde e pinta a última casa de preto)
             call pinta_ultima_casa_de_preto
             call atualiza_coordenadas
-            mov dx, snake_novo_y
-            mov snake_y_pos[0], dx          ; Atualiza o valor de snake_y (move para baixo)
+            mov ax, snake_novo_y
+            mov snake_y_pos[0], ax          ; Atualiza o valor de snake_y (move para baixo)
             call desenha_snake
 
             jmp move_snake_ret
        
         houve_colisao:
-            call desenha_game_over
+            call desenha_game_over          ; Se houve colisão, o jogador perdeu o jgoo
             
         pegou_maca_x:
-            inc tamanho_snake
-            call atualiza_coordenadas
+            inc tamanho_snake               ; A snake cresce
+            call atualiza_coordenadas       ; As coordenadas são atualizadas, já que a snake 
 
-            mov dx, snake_novo_x
-            mov snake_x_pos[0], dx
-            call desenha_snake
+            mov ax, snake_novo_x            ; Atualizando a coordenada da cabeça da snake
+            mov snake_x_pos[0], ax          ; Atualizando a coordenada da cabeça da snake
+            call desenha_snake              ; Desenhando o pixel da cabeça da snake
 
-            mov pegouMaca, 0
-            call desenha_maca
+            mov pegouMaca, 0                ; O jogador ainda nao pegou a nova maca
+            call desenha_maca               ; Desenhando nova maca
 
-            jmp move_snake_ret
+            jmp move_snake_ret        
 
         pegou_maca_y:
-            inc tamanho_snake
-            call atualiza_coordenadas
+            inc tamanho_snake               ; A snake cresce
+            call atualiza_coordenadas       ; As coordenadas são atualizadas, já que a snake 
 
-            mov dx, snake_novo_y
-            mov snake_y_pos[0], dx
-            call desenha_snake
+            mov ax, snake_novo_y            ; Atualizando a coordenada da cabeça da snake
+            mov snake_y_pos[0], ax          ; Atualizando a coordenada da cabeça da snake
+            call desenha_snake              ; Desenhando o pixel da cabeça da snake
 
-            mov pegouMaca, 0
-            call desenha_maca
+            mov pegouMaca, 0                ; O jogador ainda nao pegou a nova maca
+            call desenha_maca               ; Desenhando nova maca
             
             jmp move_snake_ret
 
         move_snake_ret:
-            pop dx
+            pop ax
             ret
     move_snake endp
 
@@ -587,6 +590,7 @@ inicio:
         ret
 
         verifica_teclado_loop:
+            call verifica_tecla_valida     ; Vê se o jogador pressionou uma tecla sem ser A, S, W e D
             call ignorar_direcao_contraria ; Imposibilita o jogador a ir para a direcao contraria à atual
             mov tecla, al         ; Guardando a tecla nova
             mov ah, 00h           ; Get tecla
@@ -594,6 +598,27 @@ inicio:
             jmp verifica_teclado
 
     verifica_teclado endp
+
+    verifica_tecla_valida proc ; Vê se o jogador pressionou uma tecla sem ser A, S, W e D
+
+        cmp al, 'd'
+        je verifica_tecla_valida_ret 
+
+        cmp al, 'a'
+        je verifica_tecla_valida_ret 
+
+        cmp al, 'w'
+        je verifica_tecla_valida_ret 
+
+        cmp al, 's'
+        je verifica_tecla_valida_ret
+
+        mov al, tecla ; Se a tecla nao é nenhuma das teclas validas, a direcao continua a mesma
+
+        verifica_tecla_valida_ret:
+        ret
+
+    verifica_tecla_valida endp
 
     ignorar_direcao_contraria proc ; Para que a snake nao possa andar na direcao oposta
 
